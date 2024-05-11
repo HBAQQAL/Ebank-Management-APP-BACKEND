@@ -11,7 +11,10 @@ import org.springframework.expression.spel.ast.OpAnd;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ebank.ebank.dtos.BankAccountDTO;
+import com.ebank.ebank.dtos.CurrentAccountDTO;
 import com.ebank.ebank.dtos.CustomerDTO;
+import com.ebank.ebank.dtos.SavingAccountDTO;
 import com.ebank.ebank.entities.AccountOperation;
 import com.ebank.ebank.entities.BankAccount;
 import com.ebank.ebank.entities.CurrentAccount;
@@ -22,6 +25,7 @@ import com.ebank.ebank.enums.OperationType;
 import com.ebank.ebank.exceptions.BalanceNotSufficientException;
 import com.ebank.ebank.exceptions.BankAccountNotFoundException;
 import com.ebank.ebank.exceptions.CustomerNotFoundException;
+import com.ebank.ebank.mappers.AccountMapper;
 import com.ebank.ebank.mappers.CustomerMapper;
 import com.ebank.ebank.repositories.AccountOperationRepository;
 import com.ebank.ebank.repositories.BankAccountRepository;
@@ -43,6 +47,8 @@ public class BankAccountServiceImpl implements BankAccountService {
   private AccountOperationRepository accountOperationRepository;
   @Autowired
   private CustomerMapper customerMapper;
+  @Autowired
+  private AccountMapper accountMapper;
 
   @Override
   public CustomerDTO saveCustomer(CustomerDTO customer) {
@@ -52,31 +58,33 @@ public class BankAccountServiceImpl implements BankAccountService {
   }
 
   @Override
-  public SavingAccount saveSavingAccount(double initialBalance, Long customerId, double interestRate) {
+  public SavingAccountDTO saveSavingAccountDTO(double initialBalance, Long customerId, double interestRate) {
     Customer c = customerRepository.findById(customerId)
         .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
     SavingAccount sa = new SavingAccount();
     sa.setBalance(initialBalance);
     sa.setCustomer(c);
     sa.setCreatedAt(new Date());
-    sa.setInterestRate(Math.random() * 100);
+    sa.setInterestRate(interestRate);
     sa.setStatus(AccountStatus.ACTIVATED);
     bankAccountRepository.save(sa);
-    return sa;
+    SavingAccountDTO saDTO = accountMapper.toSavingAccountDTO(sa);
+    return saDTO;
   }
 
   @Override
-  public CurrentAccount saveCurrentAccount(double initialBalance, Long customerId, double overdraft) {
+  public CurrentAccountDTO saveCurrentAccountDTO(double initialBalance, Long customerId, double overdraft) {
     Customer c = customerRepository.findById(customerId)
         .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
     CurrentAccount ca = new CurrentAccount();
     ca.setBalance(initialBalance);
     ca.setCustomer(c);
     ca.setCreatedAt(new Date());
-    ca.setOverdraft(1000 + Math.random() * 1000);
+    ca.setOverdraft(overdraft);
     ca.setStatus(AccountStatus.ACTIVATED);
     bankAccountRepository.save(ca);
-    return ca;
+    CurrentAccountDTO caDTO = accountMapper.toCurrentAccountDTO(ca);
+    return caDTO;
   }
 
   @Override
@@ -131,9 +139,21 @@ public class BankAccountServiceImpl implements BankAccountService {
   }
 
   @Override
-  public List<BankAccount> listBankAccounts() {
+  public List<BankAccountDTO> listBankAccounts() {
     List<BankAccount> bankAccounts = bankAccountRepository.findAll();
-    return bankAccounts;
+    bankAccounts.forEach(bc -> {
+      log.info(bc.getId().toString());
+    });
+
+    List<BankAccountDTO> bankAccountDTOS = bankAccounts.stream().map((bankAccount) -> {
+      if (bankAccount instanceof SavingAccount) {
+        return accountMapper.toSavingAccountDTO((SavingAccount) bankAccount);
+      } else if (bankAccount instanceof CurrentAccount) {
+        return accountMapper.toCurrentAccountDTO((CurrentAccount) bankAccount);
+      }
+      return null;
+    }).collect(Collectors.toList());
+    return bankAccountDTOS;
   }
 
   @Override

@@ -3,7 +3,10 @@ package com.ebank.ebank.services;
 import java.util.Currency;
 import java.util.List;
 
+import com.ebank.ebank.dtos.BankAccountDTO;
+import com.ebank.ebank.dtos.CurrentAccountDTO;
 import com.ebank.ebank.dtos.CustomerDTO;
+import com.ebank.ebank.dtos.SavingAccountDTO;
 import com.ebank.ebank.entities.BankAccount;
 import com.ebank.ebank.entities.CurrentAccount;
 import com.ebank.ebank.entities.Customer;
@@ -13,13 +16,13 @@ import com.ebank.ebank.exceptions.CustomerNotFoundException;
 public interface BankAccountService {
   CustomerDTO saveCustomer(CustomerDTO customer);
 
-  SavingAccount saveSavingAccount(double initialBalance, Long customerId, double interestRate);
+  SavingAccountDTO saveSavingAccountDTO(double initialBalance, Long customerId, double interestRate);
 
-  CurrentAccount saveCurrentAccount(double initialBalance, Long customerId, double overdraft);
+  CurrentAccountDTO saveCurrentAccountDTO(double initialBalance, Long customerId, double overdraft);
 
   List<CustomerDTO> listCustomers();
 
-  List<BankAccount> listBankAccounts();
+  List<BankAccountDTO> listBankAccounts();
 
   BankAccount getBankAccount(Long accountId);
 
